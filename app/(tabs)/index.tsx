@@ -1,13 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, Pressable, ActivityIndicator, StyleSheet, Platform, Alert } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View, Text, Image, Pressable,
+  ActivityIndicator, StyleSheet, ImageBackground
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { ScrollView } from 'react-native-gesture-handler';
+import { useRouter } from 'expo-router';
 import find_img from '../../assets/images/find_img.png';
+import { incrementAttempts, isPremium } from '../lib/storage';
+import bg from '../../assets/images/bg.png';
 
 export default function HomeScreen() {
   const [image, setImage] = useState(null);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -18,11 +24,22 @@ export default function HomeScreen() {
     });
 
     if (!result.canceled) {
-      const uri = result.assets[0].uri;
-      console.log('Выбранный файл:', uri);
-      setImage(uri);
-      recognizeText(uri);
+      setImage(result.assets[0].uri);
+      await handleRecognize(result.assets[0].uri);
     }
+  };
+
+  const handleRecognize = async (imageUri) => {
+    const premium = await isPremium();
+    if (!premium) {
+      const attempts = await incrementAttempts();
+      if (attempts > 2) {
+        router.push('/premium');
+        return;
+      }
+    }
+
+    recognizeText(imageUri);
   };
 
   const recognizeText = async (imageUri) => {
@@ -32,21 +49,19 @@ export default function HomeScreen() {
       formData.append('file', {
         uri: imageUri,
         name: 'photo.jpg',
-        type: 'image/jpeg',
+        type: 'image/jpeg'
       });
-
-      const response = await fetch('http://10.0.2.2:8000/extract-text/', {
+      const response = await fetch('https://fastapitext.fly.dev/extract-text/', {
         method: 'POST',
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'multipart/form-data'
         },
-        body: formData,
+        body: formData
       });
 
       const data = await response.json();
       setText(data.text);
     } catch (error) {
-      console.error('Ошибка:', error);
       setText('Ошибка при распознавании текста');
     } finally {
       setLoading(false);
@@ -54,46 +69,60 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>📷 Распознавание текста с изображения</Text>
+    <ImageBackground source={bg} style={styles.background}>
+      <View style={styles.card}>
+        <Text style={styles.title}>📷 Распознавание текста</Text>
 
-      <View style={styles.imagePlaceholder}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.image} />
+        <View style={styles.imagePlaceholder}>
+          {image ? (
+            <Image source={{ uri: image }} style={styles.image} />
+          ) : (
+            <Image source={find_img} style={styles.img} />
+          )}
+        </View>
+
+        <Pressable style={styles.button} onPress={pickImage}>
+          <Text style={styles.buttonText}>Выбрать изображение</Text>
+        </Pressable>
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#4A90E2" style={{ marginTop: 20 }} />
         ) : (
-          <Image style={styles.img} source={find_img} />
+          text !== '' && <Text style={styles.resultText}>{text}</Text>
         )}
       </View>
-
-      <Pressable style={styles.button} onPress={pickImage}>
-        <Text style={styles.buttonText}>Выбрать изображение</Text>
-      </Pressable>
-
-      {loading ? (
-        <ActivityIndicator size="large" color="#4A90E2" style={{ marginTop: 20 }} />
-      ) : (
-        text !== '' && <Text style={styles.resultText}>{text}</Text>
-      )}
-    </ScrollView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
+  background: {
+    flex: 1,
+    resizeMode: 'cover',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#fff',
   },
-  header: {
-    fontSize: 22,
-    fontWeight: '600',
-    margin: 24,
+  card: {
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    padding: 30,
+    borderRadius: 20,
+    width: '85%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 16,
   },
   imagePlaceholder: {
-    width: 280,
-    height: 200,
+    width: 260,
+    height: 180,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 12,
@@ -101,31 +130,32 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: {
-    width: 280,
-    height: 200,
+    width: 260,
+    height: 180,
     borderRadius: 12,
     resizeMode: 'cover',
   },
-  resultText: {
-    fontSize: 16,
-    marginTop: 24,
-    color: '#333',
-    textAlign: 'center',
-  },
   img: {
-    width: 250,
-    height: 250,
+    width: 220,
+    height: 220,
     resizeMode: 'contain',
   },
   button: {
-    backgroundColor: '#585799',
+    backgroundColor: '#4CAF50',
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingHorizontal: 28,
+    borderRadius: 30,
+    marginTop: 8,
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '600',
     fontSize: 16,
+  },
+  resultText: {
+    fontSize: 16,
+    marginTop: 20,
+    color: '#eee',
+    textAlign: 'center',
   },
 });
