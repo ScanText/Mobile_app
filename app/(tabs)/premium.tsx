@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, ImageBackground, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
-import bg from '../assets/images/bg.png';
+import bg from '../../assets/images/sky.png';
+
 
 export default function PremiumScreen() {
   const router = useRouter();
@@ -52,12 +53,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  card: {
+ /* card: {
     backgroundColor: 'rgba(0,0,0,0.65)',
     padding: 30,
     borderRadius: 20,
     width: '85%',
     alignItems: 'center',
+  },*/
+  card: {
+    width: '85%',
+    padding: 24,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
   },
   title: {
     fontSize: 26,
@@ -85,22 +98,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     marginBottom: 20,
+    textAlign:'center'
   },
   button: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 30,
-    marginBottom: 16,
+    backgroundColor:  '#4caf50',
+    padding: 14,
+    borderRadius: 8,
+    marginTop: 12,
+    alignItems: 'center',
   },
   buttonText: {
     color: '#fff',
     fontWeight: '600',
-    fontSize: 16,
   },
   link: {
-    color: '#87CEFA',
-    marginTop: 10,
-    fontSize: 14,
+    textAlign: 'center',
+    color: '#5c6bc0',
+    marginBottom: 24,
+    padding:10
   },
 });
